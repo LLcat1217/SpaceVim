@@ -1888,12 +1888,13 @@ Denite/Unite 是一个强大的信息筛选浏览器，这类似于 Emacs 中的
 
 #### 在工程中搜索文件
 
-| 快捷键    | 功能描述                 |
-| --------- | ------------------------ |
-| `SPC p f` | 在当前工程中查找文件     |
-| `SPC p /` | 在当前工程中搜索文本内容 |
-| `SPC p k` | 关闭当前工程的所有缓冲区 |
-| `SPC p p` | 显示所有工程             |
+| 快捷键    | 功能描述                     |
+| --------- | ---------------------------- |
+| `SPC p f` | 在当前工程中查找文件         |
+| `SPC p F` | 在当前工程中查找光标下的文件 |
+| `SPC p /` | 在当前工程中搜索文本内容     |
+| `SPC p k` | 关闭当前工程的所有缓冲区     |
+| `SPC p p` | 显示所有工程                 |
 
 `SPC p p` 将会列出最近使用的项目清单，默认会显示最多 20 个，
 这一数量可以使用 `projects_cache_num` 来修改。
@@ -1923,6 +1924,26 @@ Denite/Unite 是一个强大的信息筛选浏览器，这类似于 Emacs 中的
     "test": "test/layer/lang/{}.vader"
   }
 }
+```
+
+除了使用 `.project_alt.json` 文件以外，还可以在启动函数中设置 `b:alternate_file_config`，
+例如：
+
+```vim
+augroup myspacevim
+    autocmd!
+    autocmd BufNewFile,BufEnter *.c let b:alternate_file_config = {
+        \ "src/*.c" : {
+            \ "doc" : "docs/{}.md",
+            \ "alternate" : "include/{}.h",
+            \ }
+        \ }
+    autocmd BufNewFile,BufEnter *.h let b:alternate_file_config = {
+        \ "include/*.h" : {
+            \ "alternate" : "scr/{}.c",
+            \ }
+        \ }
+augroup END
 ```
 
 ### 标签管理
@@ -2052,10 +2073,10 @@ SpaceVim 目前支持自动识别以下构建系统的任务：npm。
 ```vim
 function! s:make_tasks() abort
     if filereadable('Makefile')
-        let subcmd = filter(readfile('Makefile', ''), "v:val=~#'^.PHONY'")
-        if !empty(subcmd)
-            let commands = split(subcmd[0])[1:]
-            let conf = {}
+        let subcmds = filter(readfile('Makefile', ''), "v:val=~#'^.PHONY'")
+        let conf = {}
+        for subcmd in subcmds
+            let commands = split(subcmd)[1:]
             for cmd in commands
                 call extend(conf, {
                             \ cmd : {
@@ -2066,10 +2087,8 @@ function! s:make_tasks() abort
                             \ }
                             \ })
             endfor
-            return conf
-        else
-            return {}
-        endif
+        endfor
+        return conf
     else
         return {}
     endif
